@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Wilds Online</title><link rel="stylesheet" href="/style.css" /></head>
+  <body>
+    <main>
+      <section id="login" class="panel login">
+        <div class="brand"><span>✦</span> WILDS ONLINE</div>
+        <p>Un mundo de criaturas por descubrir.</p>
+        <input id="name" maxlength="14" placeholder="Tu nombre de explorador" autocomplete="off" />
+        <button id="enter">Entrar al mundo</button>
+        <small>Abre otra pestaña para probar el modo multijugador.</small>
+      </section>
+      <section id="game" hidden>
+        <canvas id="world" width="960" height="540"></canvas>
+        <div class="hud top"><div><b>WILDS ONLINE</b><span id="online">0 exploradores</span></div><div id="location">Claro de Lumbre</div></div>
+        <div class="hud side"><b>Tu colección</b><div id="collection"></div><hr><span id="wins">Victorias: 0</span><span id="coins">Fragmentos: 0</span></div>
+        <div id="raid-panel" class="hud raid"><b>⚔ INCURSIÓN</b><span id="raid-name">Cindragon</span><i><strong id="raid-hp"></strong></i><small id="raid-info">Dirígete a Tierras de Ceniza</small><button id="raid-join">Unirse</button><div id="raid-moves"></div></div>
+        <div class="hud help"><kbd>WASD</kbd> mover <kbd>E</kbd> capturar <kbd>B</kbd> duelo <kbd>R</kbd> incursión</div>
+        <div id="feed"></div>
+        <div id="prompt" hidden><p id="prompt-text"></p><button id="accept">Aceptar</button><button id="reject">Rechazar</button></div>
+        <div id="battle" hidden><div class="battle-card"><h2>Duelo de criaturas</h2><p id="battle-status"></p><div class="hp"><span>Tu criatura</span><i><b id="my-hp"></b></i></div><div class="hp"><span>Rival</span><i><b id="rival-hp"></b></i></div><div id="battle-moves"></div></div></div>
+      </section>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
