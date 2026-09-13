@@ -10,6 +10,12 @@ Juego web pixel-art multijugador de exploración y captura de criaturas original
 
 Para probar el multijugador, abre dos pestañas e ingresa con nombres distintos.
 
+## Despliegue en Vercel
+
+El repositorio está preparado para desplegarse en Vercel. Cada cambio enviado a la rama `main` genera una nueva versión automáticamente. Vercel atiende la conexión en tiempo real en `/api/ws`.
+
+> Nota: para un lanzamiento público, el progreso debe migrarse a una base de datos externa; el almacenamiento de archivos de una función en Vercel no es permanente.
+
 ## Controles
 
 - `WASD` o flechas: mover al explorador.
