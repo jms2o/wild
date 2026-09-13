@@ -60,7 +60,7 @@ const server = createServer(async (req, res) => {
   try { const file = await readFile(target); res.writeHead(200, { 'content-type': mime[extname(target)] || 'application/octet-stream' }); res.end(file); } catch { res.writeHead(404); res.end('No encontrado'); }
 });
 const wss = new WebSocketServer({ noServer: true });
-server.on('upgrade', (req, socket, head) => { if (req.url === '/ws') wss.handleUpgrade(req, socket, head, ws => wss.emit('connection', ws)); else socket.destroy(); });
+server.on('upgrade', (req, socket, head) => { if (req.url === '/ws' || req.url === '/api/ws') wss.handleUpgrade(req, socket, head, ws => wss.emit('connection', ws)); else socket.destroy(); });
 
 wss.on('connection', ws => {
   let id = null;
@@ -92,6 +92,13 @@ wss.on('connection', ws => {
       if (duel.hp[rivalId] <= 0) { player.wins++; player.coins += 25; savePlayer(player); for (const participantId of [id, rivalId]) message(sockets.get(participantId), { type: 'duelEnd', winner: player.name, coins: participantId === id ? player.coins : null }); duels.delete(id); duels.delete(rivalId); broadcast({ type: 'notice', text: `${player.name} ganó el duelo con ${move.name}.` }); }
       else { duel.turn = rivalId; for (const participantId of [id, rivalId]) message(sockets.get(participantId), { type: 'duelUpdate', attacker: id, move: move.name, damage, myHp: duel.hp[participantId], rivalHp: duel.hp[participantId === duel.a ? duel.b : duel.a], turn: duel.turn }); } return;
     }
+    if (data.type === 'duelForfeit') {
+      const duel = duels.get(id); if (!duel) return;
+      const rivalId = duel.a === id ? duel.b : duel.a; const rival = players.get(rivalId);
+      duels.delete(id); duels.delete(rivalId);
+      for (const participantId of [id, rivalId]) message(sockets.get(participantId), { type: 'duelEnd', winner: rival?.name || 'El rival', coins: null });
+      broadcast({ type: 'notice', text: `${player.name} abandonó el duelo.` }); return;
+    }
     if (data.type === 'joinRaid') { if (!raid.active) { message(ws, { type: 'notice', text: 'La incursión se está preparando. Vuelve pronto.' }); return; } if (distance(player, raid) > 180) { message(ws, { type: 'notice', text: 'Acércate a Cindragon para unirte a la incursión.' }); return; } raid.members.add(id); message(ws, { type: 'raidJoined', moves: player.captures[0].moves }); raidBroadcast(`${player.name} se unió a la incursión.`); return; }
     if (data.type === 'raidAttack') {
       if (!raid.active || !raid.members.has(id)) return; const move = player.captures[0].moves[Number(data.move) || 0] || player.captures[0].moves[0]; const damage = Math.max(7, move.power + Math.floor(Math.random() * 9)); raid.hp = Math.max(0, raid.hp - damage);
@@ -102,4 +109,6 @@ wss.on('connection', ws => {
   });
   ws.on('close', () => { if (!id) return; const player = players.get(id); if (player) savePlayer(player); players.delete(id); sockets.delete(id); raid.members.delete(id); const duel = duels.get(id); if (duel) { duels.delete(duel.a); duels.delete(duel.b); } broadcast({ type: 'playerLeft', id }); raidBroadcast(); if (player) broadcast({ type: 'notice', text: `${player.name} salió del mundo.` }); });
 });
-server.listen(PORT, () => console.log(`Wilds Online listo en http://localhost:${PORT}`));
+if (!process.env.VERCEL) server.listen(PORT, () => console.log(`Wilds Online listo en http://localhost:${PORT}`));
+
+export default server;
