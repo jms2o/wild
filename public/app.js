@@ -21,7 +21,7 @@ function renderRaid() {
   if (state.raidJoined) state.raidMoves.forEach((move, index) => { const button = document.createElement('button'); button.className = 'move'; button.textContent = move.name; button.onclick = () => send({ type:'raidAttack', move:index }); actions.append(button); });
 }
 function connect() {
-  const name = $('#name').value.trim() || 'Explorador'; state.ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+  const name = $('#name').value.trim() || 'Explorador'; state.ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/ws`);
   state.ws.addEventListener('open', () => send({ type:'join', name })); state.ws.addEventListener('close', () => notify('Conexión perdida. Recarga para volver.'));
   state.ws.addEventListener('message', event => handle(JSON.parse(event.data)));
 }
@@ -46,9 +46,10 @@ function handle(data) {
   if (data.type === 'raidReward') { state.me.captures.push(data.creature); state.me.coins = data.coins; state.raidJoined = false; renderCollection(); renderRaid(); notify('¡Recompensa de incursión: Cindrake!'); }
 }
 function openBattle(status) {
-  $('#battle').hidden = false; $('#battle-status').textContent = status; $('#my-hp').style.width = `${Math.max(0, state.duel.myHp) / state.me.captures[0].hp * 100}%`; $('#rival-hp').style.width = `${Math.max(0, state.duel.rivalHp) / state.duel.rival.creature.hp * 100}%`;
+  const myCreature = state.me.captures?.[0] || { hp: 30, moves: [{ name:'Impacto', power:10 }] }; const rivalCreature = state.duel.rival?.creature || { hp: myCreature.hp }; const moves = state.duel.moves?.length ? state.duel.moves : myCreature.moves;
+  $('#battle').hidden = false; $('#battle-status').textContent = status; $('#my-hp').style.width = `${Math.max(0, state.duel.myHp) / myCreature.hp * 100}%`; $('#rival-hp').style.width = `${Math.max(0, state.duel.rivalHp) / rivalCreature.hp * 100}%`;
   const actions = $('#battle-moves'); actions.innerHTML = ''; const myTurn = state.duel.turn === state.id;
-  state.duel.moves.forEach((move, index) => { const button = document.createElement('button'); button.className = 'move'; button.disabled = !myTurn; button.textContent = myTurn ? move.name : 'Turno rival'; button.onclick = () => send({ type:'attack', move:index }); actions.append(button); });
+  moves.forEach((move, index) => { const button = document.createElement('button'); button.className = 'move'; button.disabled = !myTurn; button.textContent = myTurn ? move.name : 'Turno rival'; button.onclick = () => send({ type:'attack', move:index }); actions.append(button); });
 }
 function nearest(items, range) { let found = null, best = range; for (const item of items.values()) { const d = Math.hypot(item.x - state.me.x, item.y - state.me.y); if (d < best) { found = item; best = d; } } return found; }
 function update(delta) {
@@ -70,4 +71,4 @@ function loop(time) { const delta = Math.min((time - state.last) / 1000, .05); s
 $('#enter').addEventListener('click', connect); $('#name').addEventListener('keydown', event => { if (event.key === 'Enter') connect(); });
 addEventListener('keydown', event => { const key = event.key.toLowerCase(); state.keys.add(key); if (event.repeat || !state.me) return; if (key === 'e') { const creature = nearest(state.creatures, 88); if (creature) send({ type:'capture', creatureId:creature.id }); else notify('Acércate más a una criatura para capturarla.'); } if (key === 'b') { const others = new Map([...state.players].filter(([id]) => id !== state.id)); const rival = nearest(others, 130); if (rival) send({ type:'duelRequest', targetId:rival.id }); else notify('Acércate a otro explorador para retarlo.'); } if (key === 'r') send({ type:'joinRaid' }); });
 addEventListener('keyup', event => state.keys.delete(event.key.toLowerCase()));
-$('#accept').addEventListener('click', () => { send({ type:'duelAnswer', fromId:state.invite.id, accept:true }); $('#prompt').hidden = true; }); $('#reject').addEventListener('click', () => { send({ type:'duelAnswer', fromId:state.invite.id, accept:false }); $('#prompt').hidden = true; }); $('#raid-join').addEventListener('click', () => send({ type:'joinRaid' }));
+$('#accept').addEventListener('click', () => { send({ type:'duelAnswer', fromId:state.invite.id, accept:true }); $('#prompt').hidden = true; }); $('#reject').addEventListener('click', () => { send({ type:'duelAnswer', fromId:state.invite.id, accept:false }); $('#prompt').hidden = true; }); $('#raid-join').addEventListener('click', () => send({ type:'joinRaid' })); $('#leave-duel').addEventListener('click', () => { send({ type:'duelForfeit' }); state.duel = null; $('#battle').hidden = true; });
